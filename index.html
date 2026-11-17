@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark" />
-  <meta name="description" content="마이크로 나스닥(MNQ) 선물의 손절 손실액, 계좌 대비 리스크 및 위험 한도 내 최대 계약 수를 계산합니다." />
-  <title>MNQ | 포지션 리스크 계산기</title>
+  <meta name="description" content="마이크로 나스닥(MNQ) 및 마이크로 골드(MGC) 선물의 손절 손실액, 계좌 대비 리스크 및 최대 계약 수를 계산합니다." />
+  <title>MNQ · MGC | 포지션 리스크 계산기</title>
   <style>
     :root {
       --bg: #080d19; --panel: #111b2e; --panel2: #16233a; --line:#273650;
@@ -17,6 +17,7 @@
     body { margin:0; min-height:100vh; font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
       background: radial-gradient(ellipse at 15% -12%,#1b3658 0,transparent 46%),radial-gradient(ellipse at 110% 20%,#102b31 0,transparent 45%),var(--bg); color:var(--text); }
     button,input { font:inherit; }
+    button { -webkit-tap-highlight-color: transparent; }
     button { cursor:pointer; }
     .container { width:min(1060px,calc(100% - 32px)); margin:0 auto; padding:42px 0 62px; }
     .eyebrow { display:flex; gap:9px; align-items:center; color:var(--teal); font-size:12px; font-weight:800; letter-spacing:0.16em; text-transform:uppercase; }
@@ -31,6 +32,13 @@
     .input-panel { padding:25px; }
     .section-title { font-size:17px; font-weight:750; margin:0 0 6px; letter-spacing:-.025em; }
     .section-description { margin:0 0 25px; font-size:12px; line-height:1.6; color:var(--muted); }
+    .product-switch { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:0 0 23px; }
+    .product-btn { color:#b8cadf; border:1px solid #34445f; background:#0b1425; border-radius:12px; text-align:left; padding:15px 14px; min-width:0; }
+    .product-btn strong { display:block; font-size:17px; letter-spacing:.01em; color:inherit; }
+    .product-btn span { display:block; color:#8d9fb5; font-size:11px; margin-top:5px; white-space:nowrap; }
+    .product-btn[aria-pressed="true"] { border-color:#65d9c7; background:#17353c; color:#b0fff0; box-shadow:inset 0 0 0 1px rgba(101,217,199,.16); }
+    .product-btn[aria-pressed="true"] span { color:#b5e5dc; }
+    .product-btn:focus-visible { outline:3px solid var(--teal); outline-offset:2px; }
     .field { margin-bottom:19px; }
     .field label { display:flex; justify-content:space-between; align-items:center; gap:6px; margin-bottom:9px; font-size:13px; font-weight:630; color:#d5e1ef; }
     .field label small { font-size:11px; font-weight:450; color:var(--muted); }
@@ -87,33 +95,37 @@
     .foot a { color:#9fe4da; text-decoration:underline; }
     .foot a:focus-visible { outline:2px solid var(--teal); }
     @media(max-width:720px){.container{padding-top:26px}.header{display:block}.headchip{display:inline-block;margin-top:15px}.layout{grid-template-columns:1fr}.input-panel{padding:21px}.hero{padding:22px}.details{padding:19px}.stat{padding:18px 16px}}
-    @media(max-width:370px){.twofields{grid-template-columns:1fr}.twofields .field label{min-height:auto}.stat-grid{gap:9px}.stat{padding:15px 12px}.statvalue{font-size:19px}}
+    @media(max-width:370px){.product-btn{padding:13px 10px}.product-btn span{font-size:10px}.twofields{grid-template-columns:1fr}.twofields .field label{min-height:auto}.stat-grid{gap:9px}.stat{padding:15px 12px}.statvalue{font-size:19px}}
   </style>
 </head>
 <body>
   <main class="container">
-    <div class="eyebrow"><span class="symbol">MNQ</span> MICRO E-MINI NASDAQ-100</div>
+    <div class="eyebrow"><span class="symbol" id="headline-symbol">MNQ</span><span id="headline-name">MICRO E-MINI NASDAQ-100</span></div>
     <div class="header">
       <div>
         <h1>포지션 리스크 계산기</h1>
         <p class="subtitle">현재 자산과 진입·손절 가격을 입력하면 예상 손실액과 계좌 리스크를 실시간으로 계산합니다.</p>
       </div>
-      <div class="headchip">1포인트 = <b>$2.00</b> / 계약</div>
+      <div class="headchip">1포인트 = <b id="point-value">$2.00</b> / 계약</div>
     </div>
     <div class="layout">
       <section class="panel input-panel" aria-labelledby="inputs-title">
         <h2 class="section-title" id="inputs-title">포지션 입력</h2>
-        <p class="section-description">아래 세 값을 입력하면 1계약 기준부터 계산합니다.</p>
+        <p class="section-description">상품을 선택하고 아래 세 값을 입력하면 자동으로 계산합니다.</p>
+        <div class="product-switch" role="group" aria-label="선물 상품 선택">
+          <button class="product-btn" type="button" data-product="MNQ" aria-pressed="true"><strong>MNQ</strong><span>마이크로 나스닥</span></button>
+          <button class="product-btn" type="button" data-product="MGC" aria-pressed="false"><strong>MGC</strong><span>마이크로 골드</span></button>
+        </div>
         <div class="field">
           <label for="equity">현재 자산 <small>계좌 순자산 / NAV</small></label>
           <div class="input-wrap"><input id="equity" type="number" inputmode="decimal" min="0.01" step="any" placeholder="예: 50000" autocomplete="off" /><span class="unit">USD</span></div>
         </div>
         <div class="field">
-          <label for="entry">진입가 <small>MNQ 지수 포인트</small></label>
+          <label for="entry">진입가 <small id="price-label">MNQ 지수 포인트</small></label>
           <div class="input-wrap"><input id="entry" type="number" inputmode="decimal" min="0.25" step="0.25" placeholder="예: 26000" autocomplete="off" /><span class="unit">pt</span></div>
         </div>
         <div class="field">
-          <label for="stop">손절가 <small>스탑 주문 가격</small></label>
+          <label for="stop">손절가 <small id="stop-label">MNQ 지수 포인트</small></label>
           <div class="input-wrap"><input id="stop" type="number" inputmode="decimal" min="0.25" step="0.25" placeholder="예: 25500" autocomplete="off" /><span class="unit">pt</span></div>
           <p class="subhint">손절가가 진입가보다 낮으면 롱, 높으면 숏으로 판별합니다.</p>
         </div>
@@ -164,16 +176,26 @@
       </div>
     </div>
     <aside class="foot">
-      <strong>MNQ 계약 규격:</strong> 1포인트 = $2.00/계약, 1틱 = 0.25포인트 = $0.50/계약.
-      <a href="https://www.cmegroup.com/markets/equities/nasdaq/micro-e-mini-nasdaq-100.contractSpecs.html" rel="noopener noreferrer" target="_blank">CME 공식 계약 사양</a>.
+      <strong id="spec-heading">MNQ 계약 규격:</strong> <span id="spec-text">1포인트 = $2.00/계약, 1틱 = 0.25포인트 = $0.50/계약.</span>
+      <a id="spec-link" href="https://www.cmegroup.com/markets/equities/nasdaq/micro-e-mini-nasdaq-100.contractSpecs.html" rel="noopener noreferrer" target="_blank">CME 공식 계약 사양</a>.
       <strong>주의:</strong> 계산값은 손절가에 정확히 체결된다는 가정하에 산출합니다. 실제 손실은 갭, 슬리피지, 수수료 등으로 더 커질 수 있습니다. 증거금 요건, 기존 포지션 리스크 및 기타 계좌 위험은 반영하지 않습니다. 입력 정보는 외부로 전송되지 않습니다.
     </aside>
   </main>
   <script>
     (() => {
       'use strict';
-      const POINT_VALUE = 2;
-      const TICK_SIZE = 0.25;
+      const PRODUCTS = Object.freeze({
+        MNQ: { symbol:'MNQ', name:'MICRO E-MINI NASDAQ-100', pointValue:2, tickSize:0.25,
+          priceLabel:'MNQ 지수 포인트', priceUnit:'pt', exampleEntry:26000, exampleStop:25500,
+          description:'지수 포인트 / 틱', url:'https://www.cmegroup.com/markets/equities/nasdaq/micro-e-mini-nasdaq-100.contractSpecs.html' },
+        MGC: { symbol:'MGC', name:'MICRO GOLD', pointValue:10, tickSize:0.1,
+          priceLabel:'MGC 금 가격 (USD/oz)', priceUnit:'USD/oz', exampleEntry:4200, exampleStop:4150,
+          description:'금 가격(USD/oz) / 틱', url:'https://www.cmegroup.com/markets/microsuite/metals.html' }
+      });
+      let currentProduct = 'MNQ';
+      let contract = PRODUCTS[currentProduct];
+      // 상품 변경 시 잘못된 가격 조합을 방지하면서 이전 입력을 복원합니다.
+      const priceDrafts = {MNQ:{entry:'',stop:''},MGC:{entry:'',stop:''}};
       const inputs = Object.fromEntries(['equity','entry','stop','qty','limit'].map(k => [k, document.getElementById(k)]));
       const el = id => document.getElementById(id);
       const usd = n => new Intl.NumberFormat('en-US', {style:'currency',currency:'USD',minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
@@ -181,14 +203,42 @@
       const pct = n => `${num(n,2)}%`;
       let currentSummary = '';
       const outputIds = ['risk-dollar','risk-percent','one-risk','max-contracts','distance','after-equity','budget','used','formula'];
-      const isTickAligned = p => Math.abs(p / TICK_SIZE - Math.round(p / TICK_SIZE)) < 1e-7;
+      const isTickAligned = p => Math.abs(p / contract.tickSize - Math.round(p / contract.tickSize)) < 1e-7;
+      function applyProduct() {
+        document.querySelectorAll('[data-product]').forEach(btn =>
+          btn.setAttribute('aria-pressed',String(btn.dataset.product === currentProduct)));
+        el('headline-symbol').textContent=contract.symbol;
+        el('headline-name').textContent=contract.name;
+        el('point-value').textContent=usd(contract.pointValue);
+        el('price-label').textContent=contract.priceLabel;
+        el('stop-label').textContent=contract.priceLabel;
+        inputs.entry.step=String(contract.tickSize);
+        inputs.stop.step=String(contract.tickSize);
+        inputs.entry.min=String(contract.tickSize);
+        inputs.stop.min=String(contract.tickSize);
+        inputs.entry.placeholder=`예: ${contract.exampleEntry}`;
+        inputs.stop.placeholder=`예: ${contract.exampleStop}`;
+        el('spec-heading').textContent=`${contract.symbol} 계약 규격:`;
+        el('spec-text').textContent=`1포인트 = ${usd(contract.pointValue)}/계약, 1틱 = ${num(contract.tickSize)}포인트 = ${usd(contract.tickSize*contract.pointValue)}/계약.`;
+        el('spec-link').href=contract.url;
+      }
+      function selectProduct(nextSymbol) {
+        if (nextSymbol === currentProduct || !PRODUCTS[nextSymbol]) return;
+        priceDrafts[currentProduct] = {entry:inputs.entry.value,stop:inputs.stop.value};
+        currentProduct=nextSymbol;
+        contract=PRODUCTS[nextSymbol];
+        inputs.entry.value=priceDrafts[nextSymbol].entry;
+        inputs.stop.value=priceDrafts[nextSymbol].stop;
+        applyProduct();
+        recalc();
+      }
       function clear(message = '계산 대기 중') {
         outputIds.forEach(id => el(id).textContent='—');
         el('risk-dollar').classList.add('empty');
         el('risk-percent').classList.remove('warn');
         el('risk-sub').textContent='값을 입력하면 자동으로 계산됩니다.';
-        el('direction').textContent='MNQ · 입력 대기';
-        el('tick-distance').textContent='지수 포인트 / 틱';
+        el('direction').textContent=`${currentProduct} · 입력 대기`;
+        el('tick-distance').textContent=contract.description;
         el('qty-out').textContent='—';
         el('status').textContent=message;
         el('status').classList.remove('warn');
@@ -213,10 +263,10 @@
         if (!Number.isInteger(q) || q < 1 || q > 1e6) {clear('입력값 오류');error('계약 수는 1 이상의 정수여야 합니다.');return;}
         if (limit <= 0 || limit > 100) {clear('입력값 오류');error('리스크 한도는 0% 초과, 100% 이하로 입력하세요.');return;}
         if (entry === stop) {clear('진입가와 손절가가 같습니다.');error('진입가와 손절가를 서로 다르게 설정하세요.');return;}
-        if (!isTickAligned(entry) || !isTickAligned(stop)) {clear('틱 단위 오류');error('MNQ 가격은 0.25포인트 단위여야 합니다. 예: 26000.00 / 26000.25 / 26000.50 / 26000.75');return;}
+        if (!isTickAligned(entry) || !isTickAligned(stop)) {clear('틱 단위 오류');error(`${contract.symbol} 가격은 ${num(contract.tickSize)} 단위여야 합니다. 예: ${num(contract.exampleEntry)} / ${num(contract.exampleEntry + contract.tickSize,2)}`);return;}
         const direction = stop < entry ? '롱 (매수)' : '숏 (매도)';
         const points = Math.abs(entry - stop);
-        const oneRisk = points * POINT_VALUE;
+        const oneRisk = points * contract.pointValue;
         const totalRisk = oneRisk * q;
         const riskPct = totalRisk / equity * 100;
         const budget = equity * limit / 100;
@@ -224,10 +274,10 @@
         const usage = totalRisk / budget * 100;
         const over = totalRisk > budget + 1e-9;
         const remaining = equity - totalRisk;
-        el('direction').textContent=`MNQ · ${direction}`;
+        el('direction').textContent=`${currentProduct} · ${direction}`;
         el('risk-dollar').textContent=usd(totalRisk);
         el('risk-dollar').classList.remove('empty');
-        el('risk-sub').textContent=`MNQ ${num(q,0)}계약 손절 시 · 진입 ${num(entry)} → 손절 ${num(stop)}`;
+        el('risk-sub').textContent=`${currentProduct} ${num(q,0)}계약 손절 시 · 진입 ${num(entry)} → 손절 ${num(stop)}`;
         el('risk-percent').textContent=pct(riskPct);
         el('risk-percent').classList.toggle('warn',over);
         el('bar-fill').style.width=`${Math.min(100,usage)}%`;
@@ -240,17 +290,18 @@
         el('one-risk').textContent=usd(oneRisk);
         el('max-contracts').textContent=`${num(maxQty,0)} 계약`;
         el('distance').textContent=`${num(points)} pt`;
-        el('tick-distance').textContent=`${num(points / TICK_SIZE,0)} 틱`;
+        el('tick-distance').textContent=`${num(points / contract.tickSize,0)} 틱`;
         el('after-equity').textContent=usd(remaining);
         el('budget').textContent=usd(budget);
         el('qty-out').textContent=`${num(q,0)} 계약`;
         el('used').textContent=pct(usage);
-        el('formula').textContent=`${num(points)} × $2 × ${num(q,0)} = ${usd(totalRisk)}`;
-        currentSummary=`MNQ 포지션 리스크\n계좌 순자산: ${usd(equity)}\n방향: ${direction}\n진입가: ${num(entry)}\n손절가: ${num(stop)}\n계약 수: ${num(q,0)}\n손절 거리: ${num(points)} pt\n1계약 위험: ${usd(oneRisk)}\n총 예상 손실: ${usd(totalRisk)}\n계좌 대비 위험: ${pct(riskPct)}\n리스크 한도: ${pct(limit)} (${usd(budget)})\n한도 내 최대 계약 수: ${num(maxQty,0)}\n수수료/슬리피지/증거금 미반영`;
+        el('formula').textContent=`${num(points)} × ${usd(contract.pointValue)} × ${num(q,0)} = ${usd(totalRisk)}`;
+        currentSummary=`${currentProduct} 포지션 리스크\n계좌 순자산: ${usd(equity)}\n방향: ${direction}\n진입가: ${num(entry)}\n손절가: ${num(stop)}\n계약 수: ${num(q,0)}\n손절 거리: ${num(points)} pt\n1계약 위험: ${usd(oneRisk)}\n총 예상 손실: ${usd(totalRisk)}\n계좌 대비 위험: ${pct(riskPct)}\n리스크 한도: ${pct(limit)} (${usd(budget)})\n한도 내 최대 계약 수: ${num(maxQty,0)}\n수수료/슬리피지/증거금 미반영`;
       }
       Object.values(inputs).forEach(input => input.addEventListener('input',recalc));
-      el('example').addEventListener('click', () => {inputs.equity.value='50000'; inputs.entry.value='26000'; inputs.stop.value='25500'; inputs.qty.value='1'; inputs.limit.value='5'; recalc();});
-      el('reset').addEventListener('click', () => {inputs.equity.value='';inputs.entry.value='';inputs.stop.value='';inputs.qty.value='1';inputs.limit.value='5';error('');clear();inputs.equity.focus();});
+      document.querySelectorAll('[data-product]').forEach(btn=> btn.addEventListener('click',()=>selectProduct(btn.dataset.product))); 
+      el('example').addEventListener('click', () => {inputs.equity.value='50000'; inputs.entry.value=String(contract.exampleEntry); inputs.stop.value=String(contract.exampleStop); inputs.qty.value='1'; inputs.limit.value='5'; recalc();});
+      el('reset').addEventListener('click', () => {inputs.equity.value='';inputs.entry.value='';inputs.stop.value='';inputs.qty.value='1';inputs.limit.value='5';priceDrafts.MNQ={entry:'',stop:''};priceDrafts.MGC={entry:'',stop:''};error('');clear();inputs.equity.focus();});
       el('copy').addEventListener('click', async () => {
         if (!currentSummary) {error('먼저 현재 자산, 진입가, 손절가를 입력해 계산을 완료하세요.');return;}
         const button=el('copy'); const old=button.textContent;
@@ -263,6 +314,7 @@
           window.setTimeout(()=>button.textContent=old,1400);
         } catch(e) {error('이 브라우저에서는 자동 복사가 차단되어 있습니다.');}
       });
+      applyProduct();
       recalc();
     })();
   </script>
